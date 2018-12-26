@@ -5,14 +5,20 @@ let timer = document.getElementById('timer');
 const leftBtn = document.getElementById('leftBtn');
 const rightBtn = document.getElementById('rightBtn');
 const instructionsBox = document.getElementById('instructionsBox');
+const instructions = document.getElementById('instructions');
 const lifeBox = document.getElementById('lifeBox');
+const live = document.getElementById('live');
 const gameOverBox = document.getElementById('gameOverBox');
+const gameOver = document.getElementById('gameOver');
+const userScored = document.getElementById('userScored');
 const userLifeBox = document.getElementById('userLifeBox');
 const firstHeart = document.getElementById('firstHeart');
 const secondHeart = document.getElementById('secondHeart');
 const thirdHeart = document.getElementById('thirdHeart');
 const heartGame = document.querySelectorAll('heartGame');
-
+const langBox = document.getElementById('langBox');
+const españolFlagLang = document.getElementById('españolFlagLang');
+const englishFlagLang = document.getElementById('englishFlagLang');
 
 // Set the Canvas Width and Height as the Window.
 canvasArea.width = window.innerWidth;
@@ -21,10 +27,10 @@ canvasArea.height = window.innerHeight + 20;
 // Global variables and global functions.
 let timerBtnState;
 let startSeconds = 0;
-let rotationLevelRotated = 10;
-timer.innerHTML = 'Start game';
+timer.innerHTML = 'Iniciar';
 let statusLife = 0;
 const characterLife = 3;
+let langChosen = 1;
 
 // Function for Collisions, has parameters.
 function collisionDetection (xMainChar, yMainChar, xEnemyChar, yEnemyChar) {
@@ -120,6 +126,7 @@ function EnemyCharacter(xEnemyKey, yEnemyKey, radiusKey, startPointKey, endPoint
   this.updatedAnimationEnemy = function () {
     this.yEnemyKey += this.gravityKey;
     this.drawAnimationEnemy();
+    this.collision();
   };
 
   // This Function will live inside the Object as part of it.
@@ -132,6 +139,18 @@ function EnemyCharacter(xEnemyKey, yEnemyKey, radiusKey, startPointKey, endPoint
     canvasContext.strokeStyle = this.colorEnemyKey;
     canvasContext.stroke();
   };
+
+  this.collision = function () {
+    if (collisionDetection(newCharacter.xKey, newCharacter.yKey, this.xEnemyKey, this.yEnemyKey) < newCharacter.radiusKey + this.radiusKey) {
+      this.gravityKey = 0;
+      let enemyIndexOf = arrayEnemies.indexOf(this);
+      arrayEnemies.splice(enemyIndexOf, 1);
+      newCharacter.radiusKey += 5;
+      statusLife += 1;
+      newCharacter.xRightVelocityKey = 0;
+      newCharacter.xLeftVelocityKey = 0;
+    }
+  }
 }
 
 // Created array where enemies will be stored.
@@ -146,16 +165,13 @@ let respawnedEnemies;
 function enemyGenerator () {
   if (timerBtnState === true) {
     respawnedEnemies = setInterval(function(){
+      console.log(arrayEnemies);
       const xEnemy = generateRandomValue(canvasArea.width);
       const gravity = generateRandomValue(gravityValue);
       const radiusEnemy = generateRandomValue(radiusValue);
       arrayEnemies.push(new EnemyCharacter(xEnemy, yEnemy, radiusEnemy, startPoint, endPoint, colorEnemy, gravity, false));
       startSeconds += 1;
       timer.innerHTML = startSeconds;
-      console.log(arrayEnemies);
-      if (startSeconds === rotationLevelRotated) {
-        console.log('reached level');
-      }
     }, 5000);
   }
 };
@@ -176,45 +192,48 @@ function animateDraw() {
   newCharacter.updatedAnimationMainChar();
 
   // As soon as MainCharacter reaches the edges of the screen, it'll be pushed to the opposite side.
-  if (newCharacter.xKey + newCharacter.radiusKey > window.innerWidth - newCharacter.radiusKey) {
+  if (newCharacter.xKey + newCharacter.radiusKey > window.innerWidth) {
     newCharacter.xRightVelocityKey = 0;
-    newCharacter.xLeftVelocityKey = 5;
-  } else if (newCharacter.xKey - newCharacter.radiusKey < window.innerWidth - window.innerWidth + newCharacter.radiusKey) {
-    newCharacter.xRightVelocityKey = 5;
+    newCharacter.xLeftVelocityKey = 6;
+  } else if (newCharacter.xKey - newCharacter.radiusKey < window.innerWidth - window.innerWidth) {
+    newCharacter.xRightVelocityKey = 6;
     newCharacter.xLeftVelocityKey = 0;
+  }
+
+  if (statusLife === 1) {
+    firstHeart.setAttribute('src', 'assets/heartBrokenRed.svg');
+    firstHeart.setAttribute('class', 'heartGameHit');
+  } else if (statusLife === 2) {
+    secondHeart.setAttribute('src', 'assets/heartBrokenRed.svg');
+    secondHeart.setAttribute('class', 'heartGameHit');
+  } else if (statusLife >= 3) {
+    thirdHeart.setAttribute('src', 'assets/heartBrokenRed.svg');
+    firstHeart.setAttribute('class', 'heartGameAlmostDie');
+    secondHeart.setAttribute('class', 'heartGameAlmostDie');
+    thirdHeart.setAttribute('class', 'heartGameAlmostDie');
+    if (langChosen === 1) {
+      userScored.innerHTML = `Sobreviviste: ${startSeconds} segundos.`;
+    } else if (langChosen === 2) {
+      userScored.innerHTML = `You survived: ${startSeconds} seconds.`;
+    }
+    gameOverBox.setAttribute('class','gameOverShowingWrapper');
   }
 
   // Every frame will update animation from Enemy Character.
   // And it will check if there is any collision using CollisionDetection function that lifes outside main function.
   arrayEnemies.forEach(element => {
     element.updatedAnimationEnemy();
-    if (collisionDetection(newCharacter.xKey, newCharacter.yKey, element.xEnemyKey, element.yEnemyKey) < newCharacter.radiusKey + element.radiusKey) {
-      newCharacter.xRightVelocityKey = 0;
-      newCharacter.xLeftVelocityKey = 0;
-      element.gravityKey = 0;
-      arrayEnemies.splice(element, 1);
-      newCharacter.radiusKey += 5;
-      statusLife += 1;
-    }
-    if (statusLife === 1) {
-      firstHeart.setAttribute('src', 'assets/heartBrokenRed.svg');
-    }
-    if (statusLife === 2) {
-      secondHeart.setAttribute('src', 'assets/heartBrokenRed.svg');
-    }
-    if (statusLife >= 3) {
-      thirdHeart.setAttribute('src', 'assets/heartBrokenRed.svg');
-    }
     if (element.yEnemyKey + element.radiusKey > window.innerHeight + element.radiusKey * 2) {
       element.yEnemyKey = canvasArea.height - canvasArea.height - 100;
     }
   });
+
   if (statusLife >= characterLife) {
+    timerBtnState = false;
+    clearInterval(respawnedEnemies);
     arrayEnemies.forEach(element => {
       element.gravityKey = 0;
     });
-    timerBtnState = false;
-    clearInterval(respawnedEnemies);
   }
 }
 
@@ -226,15 +245,26 @@ timerBtn.addEventListener('click', function () {
   userLifeBox.setAttribute('class','userlifeShowingWrapper');
   instructionsBox.setAttribute('class', 'hiddenInformation');
   lifeBox.setAttribute('class', 'hiddenInformation');
+  langBox.setAttribute('class', 'langHiddenWrapper');
   timer.innerHTML = '';
-  timer.setAttribute('class', 'loadingStartsState');
+  if (langChosen === 1) {
+    timer.setAttribute('class', 'cargandoIniciaEstado');
+    setInterval(function (){
+      if (startSeconds > 0) {
+        timer.setAttribute('class', 'cargandoFinEstado');
+      }
+    }, 10);
+  } else if (langChosen === 2) {
+    timer.setAttribute('class', 'loadingStartsState');
+    setInterval(function (){
+      if (startSeconds > 0) {
+        timer.setAttribute('class', 'loadingEndsState');
+      }
+    }, 10);
+  }
   timerBtnState = true;
   enemyGenerator ();
-  setInterval(function (){
-    if (startSeconds > 0) {
-      timer.setAttribute('class', 'loadingEndsState');
-    }
-  }, 500);
+  
 });
 
 // Set the EventListeners to the Btns.
@@ -246,4 +276,44 @@ leftBtn.addEventListener('click', function () {
 rightBtn.addEventListener('click', function () {
   newCharacter.xRightVelocityKey = 3;
   newCharacter.xLeftVelocityKey = 0;
+});
+
+españolFlagLang.addEventListener('click', function(){
+  langChosen = 1;
+  leftBtn.innerHTML = 'I';
+  rightBtn.innerHTML = 'D';
+  instructions.innerHTML = 'Las reglas son sencillas, durar la mayor cantidad de tiempo sin ser tocado por los enemigos. Al ser tocado por los enemigos el tamaño del personaje va a aumentar, ocacionando que sea más sencillo perder.';
+  live.innerHTML = 'Tu personaje cuenta con 3 vidas, así que aprovéchalas!';
+  timer.innerHTML = 'Iniciar';
+  gameOver.innerHTML = 'Perdiste!';
+});
+
+englishFlagLang.addEventListener('click', function(){
+  langChosen = 2;
+  leftBtn.innerHTML = 'L';
+  rightBtn.innerHTML = 'R';
+  instructions.innerHTML = 'Rules are simple, last as long as possible without being touched by enemies. When touched by enemies your character size will increase making it easier to lose.';
+  live.innerHTML = 'Your character has 3 lives, so take advantage of them!';
+  timer.innerHTML = 'Start game';
+  gameOver.innerHTML = 'Game over!';
+});
+
+gameOverBox.addEventListener('click', function () {
+  if (langChosen === 1) {
+    timer.innerHTML = '';
+    timer.innerHTML = 'Cargando';
+    timer.setAttribute('class', 'cargandoIniciaEstado');
+    setInterval(function (){
+      timer.setAttribute('class', 'cargandoFinEstado');
+      location.reload();
+    }, 5000);
+  } else if (langChosen === 2) {
+    timer.innerHTML = '';
+    timer.innerHTML = 'Loading';
+    timer.setAttribute('class', 'loadingStartsState');
+    setInterval(function (){
+      timer.setAttribute('class', 'loadingEndsState');
+      location.reload();
+    }, 5000);
+  }
 });
